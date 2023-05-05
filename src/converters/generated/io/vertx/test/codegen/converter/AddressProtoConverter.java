@@ -46,4 +46,17 @@ public class AddressProtoConverter {
     return size;
   }
 
+  public static int computeSize2(Address obj, int[] cache, final int baseIndex) {
+    int size = 0;
+    int index = baseIndex + 1;
+    if (obj.getLatitude() != null) {
+      size += CodedOutputStream.computeFloatSize(1, obj.getLatitude());
+    }
+    if (obj.getLongitude() != null) {
+      size += CodedOutputStream.computeFloatSize(2, obj.getLongitude());
+    }
+    cache[baseIndex] = size;
+    return index;
+  }
+
 }
