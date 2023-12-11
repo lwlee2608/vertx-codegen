@@ -8,6 +8,7 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.codegen.doc.Doc;
 import io.vertx.codegen.type.*;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.test.codegen.annotations.EmptyAnnotation;
@@ -16,10 +17,7 @@ import io.vertx.test.codegen.annotations.TestEnum;
 import io.vertx.test.codegen.testapi.InvalidInterfaceDataObject;
 import io.vertx.test.codegen.testdataobject.*;
 import io.vertx.test.codegen.testdataobject.imported.Imported;
-import io.vertx.test.codegen.testdataobject.jsonmapper.DataObjectWithPojoWithMapper;
-import io.vertx.test.codegen.testdataobject.jsonmapper.MyEnumWithCustomFactory;
-import io.vertx.test.codegen.testdataobject.jsonmapper.MyPojo;
-import io.vertx.test.codegen.testdataobject.jsonmapper.DataObjectWithMappedEnum;
+import io.vertx.test.codegen.testdataobject.jsonmapper.*;
 
 import org.junit.Test;
 
@@ -63,9 +61,6 @@ public class DataObjectTest {
     DataObjectModel model = new GeneratorHelper().generateDataObject(EmptyDataObject.class);
     assertNotNull(model);
     assertTrue(model.isClass());
-    assertFalse(model.getGenerateConverter());
-    assertFalse(model.getInheritConverter());
-    assertTrue(model.isPublicConverter());
     try {
       EmptyDataObject.class.getConstructor();
       fail();
@@ -647,21 +642,16 @@ public class DataObjectTest {
   @Test
   public void testConverterDataObject() throws Exception {
     DataObjectModel model = new GeneratorHelper().generateDataObject(ConverterDataObject.class);
-    assertTrue(model.getGenerateConverter());
-    assertFalse(model.isPublicConverter());
   }
 
   @Test
   public void testNoConverterDataObject() throws Exception {
     DataObjectModel model = new GeneratorHelper().generateDataObject(NoConverterDataObject.class);
-    assertFalse(model.getGenerateConverter());
-    assertTrue(model.isPublicConverter());
   }
 
   @Test
   public void testInheritedConverterDataObject() throws Exception {
     DataObjectModel model = new GeneratorHelper().generateDataObject(InheritingConverterDataObject.class);
-    assertTrue(model.getInheritConverter());
   }
 
   @Test
@@ -894,8 +884,6 @@ public class DataObjectTest {
     DataObjectModel model = new GeneratorHelper().generateDataObject(DataObjectWithAnnotatedField.class);
     assertNotNull(model);
     assertTrue(model.isClass());
-    assertTrue(model.getGenerateConverter());
-    assertTrue(model.isPublicConverter());
     PropertyInfo idModel = model.getPropertyMap().get("id");
     assertEquals(1, idModel.getAnnotations().size());
     assertNotNull(idModel.getAnnotation(SomeAnnotation.class.getName()).getName());
@@ -916,13 +904,30 @@ public class DataObjectTest {
       .generateDataObject(DataObjectWithPojoWithMapper.class);
     assertNotNull(model);
     assertTrue(model.isClass());
-    assertTrue(model.getGenerateConverter());
-    assertTrue(model.isPublicConverter());
 
     PropertyInfo myPojoProperty = model.getPropertyMap().get("myPojo");
     assertEquals(ClassKind.OTHER, myPojoProperty.getType().getKind());
     assertTrue(myPojoProperty.getType().getDataObject().isDeserializable());
     assertTrue(myPojoProperty.getType().getDataObject().isSerializable());
+  }
+
+  @Test
+  public void testDataObjectWithAutoMapped() throws Exception {
+    DataObjectModel model = new GeneratorHelper()
+      .generateDataObject(DataObjectWithAutoMapper.class);
+    assertNotNull(model);
+    assertTrue(model.isClass());
+
+    PropertyInfo prop = model.getPropertyMap().get("value1");
+    assertEquals(ClassKind.OTHER, prop.getType().getKind());
+    assertNotNull(prop.getType().getDataObject());
+    assertTrue(prop.getType().getDataObject().isDeserializable());
+    assertTrue(prop.getType().getDataObject().isSerializable());
+    prop = model.getPropertyMap().get("value2");
+    assertEquals(ClassKind.API, prop.getType().getKind());
+    assertNotNull(prop.getType().getDataObject());
+    assertTrue(prop.getType().getDataObject().isDeserializable());
+    assertTrue(prop.getType().getDataObject().isSerializable());
   }
 
   @Test
@@ -933,8 +938,6 @@ public class DataObjectTest {
         .generateDataObject(DataObjectWithMappedEnum.class);
     assertNotNull(model);
     assertTrue(model.isClass());
-    assertTrue(model.getGenerateConverter());
-    assertTrue(model.isPublicConverter());
 
     PropertyInfo myPojoProperty = model.getPropertyMap().get("customEnum");
     assertEquals(ClassKind.ENUM, myPojoProperty.getType().getKind());
@@ -948,5 +951,19 @@ public class DataObjectTest {
       fail("Was expecting " + dataObjectClass.getName() + " to fail");
     } catch (GenException ignore) {
     }
+  }
+
+  @Test
+  public void testBuffer() throws Exception {
+    DataObjectModel model = new GeneratorHelper()
+      .generateDataObject(BufferHolder.class);
+    assertNotNull(model);
+    assertTrue(model.isClass());
+
+    PropertyInfo prop = model.getPropertyMap().get("buffer");
+    assertNotNull(prop);
+    assertFalse(prop.getType().getDataObject().isDeserializable());
+    assertFalse(prop.getType().getDataObject().isSerializable());
+    assertNull(prop.getType().getDataObject().getJsonType());
   }
 }
